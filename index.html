@@ -1,0 +1,1149 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#090b10">
+<title>Dark Jirai V3 — Scientific Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@14.8.1/lib/browser/math.js"></script>
+
+<style>
+:root{
+  --bg:#090b10;
+  --surface:#11151d;
+  --surface2:#171d27;
+  --edge:#303a4b;
+  --muted:#7d899d;
+  --red:#d52f46;
+  --redhot:#ff5268;
+  --blue:#56c8ff;
+  --text:#edf2fa;
+  --shadow:0 22px 60px #000a;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:22px;
+  color:var(--text);
+  font-family:Inter,Arial,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(ellipse at 50% -12%,#39202c 0%,transparent 42%),
+    radial-gradient(circle at 12% 85%,#10253655,transparent 35%),
+    var(--bg);
+}
+
+.calculator{
+  width:min(100%,480px);
+  padding:18px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid #465166;
+  border-radius:25px;
+  background:linear-gradient(145deg,#1a202b 0%,#11151d 48%,#0d1017 100%);
+  box-shadow:var(--shadow),0 0 34px #d52f4614,inset 0 1px #ffffff12;
+}
+
+.calculator:before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:13%;
+  right:13%;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--redhot),transparent);
+  box-shadow:0 0 17px #ff5268a8;
+}
+
+.topline{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin:1px 3px 15px;
+}
+
+.brand{
+  font-size:10px;
+  letter-spacing:2.1px;
+  color:#aeb9ca;
+  font-weight:800;
+}
+
+.version{
+  font-size:10px;
+  letter-spacing:1.4px;
+  color:#ff7182;
+}
+
+.display{
+  padding:13px 14px 11px;
+  min-height:124px;
+  border:1px solid #354154;
+  border-radius:16px;
+  background:linear-gradient(150deg,#080b11,#0c1018);
+  box-shadow:inset 0 5px 22px #000b,0 1px #ffffff08;
+  position:relative;
+}
+
+.display:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:16px;
+  background:linear-gradient(120deg,#ffffff05,transparent 35%,transparent 70%,#56c8ff05);
+}
+
+.display-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  color:#8492a8;
+  font-size:10px;
+  letter-spacing:1.2px;
+}
+
+.head-right{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.mode-pill{
+  border:1px solid #334154;
+  border-radius:20px;
+  padding:4px 8px;
+  color:#9ba9bc;
+  font-size:9px;
+}
+
+.scroll-tools{
+  display:flex;
+  gap:5px;
+}
+
+.scroll-tools button{
+  width:26px;
+  height:24px;
+  border:1px solid #344155;
+  border-radius:7px;
+  background:linear-gradient(145deg,#202a38,#111923);
+  color:#c8d5e7;
+  cursor:pointer;
+}
+
+.expression-wrap,
+.result-wrap{
+  direction:ltr;
+  overflow-x:auto;
+  white-space:nowrap;
+  scrollbar-width:thin;
+  scrollbar-color:#526177 #11151d;
+}
+
+.expression-wrap{
+  margin-top:14px;
+  min-height:27px;
+}
+
+.expression{
+  display:inline-block;
+  min-width:100%;
+  text-align:right;
+  color:#9ba8bb;
+  font-size:17px;
+}
+
+.result-wrap{
+  margin-top:5px;
+  padding-bottom:4px;
+  touch-action:pan-x;
+  cursor:grab;
+}
+
+.result-wrap:active{
+  cursor:grabbing;
+}
+
+.result{
+  display:inline-block;
+  min-width:100%;
+  text-align:right;
+  color:#f4f7fc;
+  font-size:30px;
+  font-weight:650;
+  letter-spacing:.3px;
+}
+
+.result.error{
+  font-size:15px;
+  color:#ff7788;
+}
+
+.status{
+  display:flex;
+  justify-content:space-between;
+  margin-top:5px;
+  color:#748198;
+  font-size:9px;
+  letter-spacing:1px;
+}
+
+.toolbar{
+  display:flex;
+  gap:9px;
+  margin:13px 0 10px;
+}
+
+.tool{
+  flex:1;
+  padding:10px 8px;
+  border:1px solid #3a465a;
+  border-radius:10px;
+  color:#c6d1e0;
+  background:linear-gradient(145deg,#222c3a,#151b25);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.3px;
+  cursor:pointer;
+  box-shadow:0 3px 9px #0005,inset 0 1px #ffffff0b;
+  transition:.18s;
+}
+
+.tool:hover{
+  border-color:#66758d;
+  filter:brightness(1.12);
+}
+
+.tool.active{
+  border-color:#91404d;
+  color:#ff8a98;
+  background:linear-gradient(145deg,#39232c,#211820);
+}
+
+.science{
+  display:none;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:0 0 11px;
+  padding:10px;
+  border:1px solid #303d50;
+  border-radius:14px;
+  background:linear-gradient(145deg,#111925,#0d121a);
+}
+
+.science.open{
+  display:grid;
+}
+
+.keypad{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+}
+
+.key{
+  min-height:59px;
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  border:1px solid #3b485c;
+  border-radius:13px;
+  color:#e7edf6;
+  font-size:20px;
+  font-weight:650;
+  cursor:pointer;
+  background:linear-gradient(155deg,#303b4c 0%,#202a38 48%,#171f2b 100%);
+  box-shadow:0 4px 0 #080b10,0 7px 14px #0005,inset 0 1px #ffffff18;
+  transition:transform .12s,border-color .16s,filter .16s;
+}
+
+.key:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  opacity:.55;
+  background:linear-gradient(125deg,#ffffff0d,transparent 42%,#0002);
+}
+
+.key:hover{
+  border-color:#64758e;
+  filter:brightness(1.13);
+}
+
+.key:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 #080b10,0 3px 8px #0005,inset 0 1px #ffffff12;
+}
+
+.key.op{
+  color:#ff8998;
+  border-color:#75404d;
+  background:linear-gradient(155deg,#482b38,#2b1c27 70%,#211720);
+}
+
+.key.blue{
+  color:#75d3ff;
+  border-color:#286786;
+  background:linear-gradient(155deg,#24485d,#1b3041 70%,#172431);
+}
+
+.key.dim{
+  color:#b7c3d4;
+  font-size:15px;
+}
+
+.key.equal{
+  color:white;
+  border-color:#ff7183;
+  font-size:25px;
+  background:linear-gradient(150deg,#f04a60,#c32640 65%,#941d32);
+  box-shadow:0 4px 0 #671526,0 0 18px #d52f4644,inset 0 1px #ffffff45;
+}
+
+.footer{
+  display:flex;
+  justify-content:space-between;
+  margin:16px 3px 1px;
+  color:#68758a;
+  font-size:9px;
+  letter-spacing:1.1px;
+}
+
+.footer span:last-child{
+  color:#c44b5d;
+}
+
+@media(max-width:390px){
+  body{padding:10px}
+  .calculator{padding:13px}
+  .key{min-height:53px}
+  .result{font-size:26px}
+}
+</style>
+</head>
+
+<body>
+
+<main class="calculator">
+
+  <div class="topline">
+    <div class="brand">CHISA_CORE // CALCULATOR</div>
+    <div class="version">DARK JIRAI V3</div>
+  </div>
+
+  <section class="display">
+
+    <div class="display-head">
+      <span>OUTPUT / <span id="angleLabel">DEG</span></span>
+
+      <div class="head-right">
+        <span class="mode-pill" id="engineMode">OFFLINE ENGINE</span>
+
+        <div class="scroll-tools">
+          <button type="button" id="scrollLeft">‹</button>
+          <button type="button" id="scrollRight">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="expression-wrap" id="expressionWrap">
+      <div class="expression" id="expression">0</div>
+    </div>
+
+    <div class="result-wrap" id="resultWrap">
+      <div class="result" id="result">0</div>
+    </div>
+
+    <div class="status">
+      <span id="statusText">READY / OFFLINE</span>
+      <span>LOCAL PRECISION: 1000 DIGITS</span>
+    </div>
+
+  </section>
+
+  <div class="toolbar">
+    <button class="tool" id="scienceToggle">⚙ الوظائف العلمية</button>
+    <button class="tool active" id="angleToggle">DEG / RAD</button>
+  </div>
+
+  <section class="science" id="sciencePanel">
+
+    <button class="key dim" data-insert="sin(">sin</button>
+    <button class="key dim" data-insert="cos(">cos</button>
+    <button class="key dim" data-insert="tan(">tan</button>
+    <button class="key dim" data-insert="asin(">sin⁻¹</button>
+
+    <button class="key dim" data-insert="acos(">acos</button>
+    <button class="key dim" data-insert="atan(">tan⁻¹</button>
+    <button class="key dim" data-insert="sqrt(">√</button>
+    <button class="key dim" data-insert="^">xʸ</button>
+
+    <button class="key dim" data-insert="log(">log</button>
+    <button class="key dim" data-insert="ln(">ln</button>
+    <button class="key dim" data-insert="π">π</button>
+    <button class="key dim" data-insert="e">e</button>
+
+    <button class="key dim" data-insert="!">x!</button>
+    <button class="key dim" data-insert="abs(">abs</button>
+    <button class="key dim" data-insert="10^(">10ˣ</button>
+    <button class="key dim" data-insert="exp(">eˣ</button>
+
+  </section>
+
+  <section class="keypad">
+
+    <button class="key dim" data-action="clear">AC</button>
+    <button class="key dim" data-action="delete">DEL</button>
+    <button class="key blue" data-insert="(">(</button>
+    <button class="key blue" data-insert=")">)</button>
+
+    <button class="key" data-insert="7">7</button>
+    <button class="key" data-insert="8">8</button>
+    <button class="key" data-insert="9">9</button>
+    <button class="key op" data-insert="÷">÷</button>
+
+    <button class="key" data-insert="4">4</button>
+    <button class="key" data-insert="5">5</button>
+    <button class="key" data-insert="6">6</button>
+    <button class="key op" data-insert="×">×</button>
+
+    <button class="key" data-insert="1">1</button>
+    <button class="key" data-insert="2">2</button>
+    <button class="key" data-insert="3">3</button>
+    <button class="key op" data-insert="-">−</button>
+
+    <button class="key" data-insert=".">.</button>
+    <button class="key" data-insert="0">0</button>
+    <button class="key equal" data-action="calculate">=</button>
+    <button class="key op" data-insert="+">+</button>
+
+  </section>
+
+  <div class="footer">
+    <span>TACTICAL INTERFACE</span>
+    <span>◈ SYSTEM ONLINE</span>
+  </div>
+
+</main>
+
+<script>
+(() => {
+
+const $ = id => document.getElementById(id);
+
+const expressionEl = $('expression');
+const resultEl = $('result');
+const expressionWrap = $('expressionWrap');
+const resultWrap = $('resultWrap');
+const statusText = $('statusText');
+const engineMode = $('engineMode');
+const angleLabel = $('angleLabel');
+
+let expression = '';
+let lastResult = '0';
+let angleMode = 'deg';
+let justCalculated = false;
+
+const LIMIT = 1000;
+
+const hasMath = () => typeof window.math !== 'undefined';
+
+// محرك الحساب المحلي الدقيق باستخدام BigInt
+
+const absBig = n => n < 0n ? -n : n;
+
+function gcd(a,b){
+  a=absBig(a);
+  b=absBig(b);
+
+  while(b){
+    const t=a%b;
+    a=b;
+    b=t;
+  }
+
+  return a || 1n;
+}
+
+function rational(n,d=1n){
+
+  if(d===0n) throw Error('Division by zero');
+
+  if(d<0n){
+    n=-n;
+    d=-d;
+  }
+
+  const g=gcd(n,d);
+
+  n/=g;
+  d/=g;
+
+  if(absBig(n).toString().length>LIMIT || d.toString().length>LIMIT){
+    throw Error('LIMIT');
+  }
+
+  return {kind:'rat',n,d};
+}
+
+const isRat = v => v && v.kind==='rat';
+
+const asFloat = v =>
+  isRat(v) ? Number(v.n)/Number(v.d) : v.v;
+
+function fromFloat(n){
+  if(!Number.isFinite(n)) throw Error('Invalid');
+  return {kind:'float',v:n};
+}
+
+function add(a,b){
+  return isRat(a)&&isRat(b)
+    ? rational(a.n*b.d+b.n*a.d,a.d*b.d)
+    : fromFloat(asFloat(a)+asFloat(b));
+}
+
+function sub(a,b){
+  return isRat(a)&&isRat(b)
+    ? rational(a.n*b.d-b.n*a.d,a.d*b.d)
+    : fromFloat(asFloat(a)-asFloat(b));
+}
+
+function mul(a,b){
+  return isRat(a)&&isRat(b)
+    ? rational(a.n*b.n,a.d*b.d)
+    : fromFloat(asFloat(a)*asFloat(b));
+}
+
+function div(a,b){
+
+  if(isRat(b)&&b.n===0n) throw Error('Division by zero');
+
+  return isRat(a)&&isRat(b)
+    ? rational(a.n*b.d,a.d*b.n)
+    : fromFloat(asFloat(a)/asFloat(b));
+}
+
+function pow(a,b){
+
+  if(isRat(a)&&isRat(b)&&b.d===1n&&absBig(b.n)<=10000n){
+
+    const k=Number(b.n);
+
+    if(k>=0){
+      return rational(a.n**BigInt(k),a.d**BigInt(k));
+    }
+
+    if(a.n===0n) throw Error('Division by zero');
+
+    return rational(a.d**BigInt(-k),a.n**BigInt(-k));
+  }
+
+  return fromFloat(Math.pow(asFloat(a),asFloat(b)));
+}
+
+function format(v){
+
+  if(!isRat(v)){
+    if(!Number.isFinite(v.v)) throw Error('Invalid');
+    return Number(v.v.toPrecision(15)).toString();
+  }
+
+  const sign=v.n<0n?'-':'';
+  let n=absBig(v.n);
+  let d=v.d;
+
+  const whole=n/d;
+  let rem=n%d;
+
+  let out=sign+whole.toString();
+
+  if(rem===0n) return out;
+
+  out+='.';
+  let digits=0;
+
+  while(rem!==0n&&digits<LIMIT){
+
+    rem*=10n;
+
+    out+=(rem/d).toString();
+
+    rem%=d;
+    digits++;
+
+    if(out.length>LIMIT+2) break;
+  }
+
+  return out.replace(/0+$/,'').replace(/\.$/,'');
+}
+
+// تحليل العملية الحسابية
+
+function tokenize(src){
+
+  const s=src
+    .replace(/×/g,'*')
+    .replace(/÷/g,'/')
+    .replace(/π/g,'pi')
+    .replace(/\s/g,'');
+
+  const tokens=[];
+  let i=0;
+
+  while(i<s.length){
+
+    const rest=s.slice(i);
+    const num=rest.match(/^(?:\d+\.?\d*|\.\d+)/);
+    const name=rest.match(/^[a-zA-Z]+/);
+
+    if(num){
+
+      if(num[0].replace('.','').length>LIMIT){
+        throw Error('LIMIT');
+      }
+
+      tokens.push({t:'num',v:num[0]});
+      i+=num[0].length;
+      continue;
+    }
+
+    if(name){
+      tokens.push({t:'name',v:name[0].toLowerCase()});
+      i+=name[0].length;
+      continue;
+    }
+
+    if('+-*/^!()%'.includes(s[i])){
+      tokens.push({t:s[i],v:s[i]});
+      i++;
+      continue;
+    }
+
+    throw Error('Syntax');
+  }
+
+  tokens.push({t:'eof'});
+
+  return tokens;
+}
+
+function parseLocal(src){
+
+  const ts=tokenize(src);
+  let p=0;
+
+  const peek=()=>ts[p];
+  const take=()=>ts[p++];
+
+  function primary(){
+
+    let t=take();
+    let v;
+
+    if(t.t==='num'){
+
+      const parts=t.v.split('.');
+      const scale=parts[1]?.length||0;
+
+      v=rational(
+        BigInt((parts[0]||'0')+(parts[1]||'')),
+        10n**BigInt(scale)
+      );
+
+    }else if(t.t==='+'){
+
+      v=unary();
+
+    }else if(t.t==='-'){
+
+      v=neg(unary());
+
+    }else if(t.t==='('){
+
+      v=addExpr();
+
+      if(take().t!==')') throw Error('Syntax');
+
+    }else if(t.t==='name'){
+
+      if(t.v==='pi'){
+        v=fromFloat(Math.PI);
+
+      }else if(t.v==='e'){
+        v=fromFloat(Math.E);
+
+      }else if(peek().t==='('){
+
+        take();
+
+        const arg=addExpr();
+
+        if(take().t!==')') throw Error('Syntax');
+
+        const x=asFloat(arg);
+
+        const rad=angleMode==='deg'?Math.PI/180:1;
+
+        const f={
+
+          sin:x=>Math.sin(x*rad),
+          cos:x=>Math.cos(x*rad),
+          tan:x=>Math.tan(x*rad),
+
+          asin:x=>Math.asin(x)/(angleMode==='deg'?Math.PI/180:1),
+          acos:x=>Math.acos(x)/(angleMode==='deg'?Math.PI/180:1),
+          atan:x=>Math.atan(x)/(angleMode==='deg'?Math.PI/180:1),
+
+          sqrt:x=>Math.sqrt(x),
+          log:x=>Math.log10(x),
+          ln:x=>Math.log(x),
+          abs:x=>Math.abs(x),
+          exp:x=>Math.exp(x)
+        };
+
+        if(!f[t.v]) throw Error('Syntax');
+
+        v=fromFloat(f[t.v](x));
+
+      }else{
+
+        throw Error('Syntax');
+      }
+
+    }else{
+
+      throw Error('Syntax');
+    }
+
+    while(peek().t==='!'||peek().t==='%'){
+
+      const op=take().t;
+
+      if(op==='!'){
+
+        if(!isRat(v)||v.d!==1n||v.n<0n||v.n>10000n){
+          throw Error('Factorial range');
+        }
+
+        let n=1n;
+
+        for(let j=2n;j<=v.n;j++){
+          n*=j;
+        }
+
+        v=rational(n);
+
+      }else{
+
+        v=div(v,rational(100n));
+      }
+    }
+
+    return v;
+  }
+
+  function neg(v){
+    return isRat(v)
+      ? rational(-v.n,v.d)
+      : fromFloat(-v.v);
+  }
+
+  function unary(){
+    return primary();
+  }
+
+  function power(){
+
+    let a=primary();
+
+    if(peek().t==='^'){
+      take();
+      a=pow(a,unary());
+    }
+
+    return a;
+  }
+
+  function mulExpr(){
+
+    let a=power();
+
+    while(['*','/'].includes(peek().t)){
+
+      const op=take().t;
+      const b=power();
+
+      a=op==='*'?mul(a,b):div(a,b);
+    }
+
+    return a;
+  }
+
+  function addExpr(){
+
+    let a=mulExpr();
+
+    while(['+','-'].includes(peek().t)){
+
+      const op=take().t;
+      const b=mulExpr();
+
+      a=op==='+'?add(a,b):sub(a,b);
+    }
+
+    return a;
+  }
+
+  const result=addExpr();
+
+  if(peek().t!=='eof') throw Error('Syntax');
+
+  return result;
+}
+
+// المحرك الخارجي للأرقام الكبيرة جداً
+
+function onlineEvaluate(src){
+
+  if(!hasMath()) throw Error('OFFLINE_LIMIT');
+
+  try{
+    math.config({
+      number:'BigNumber',
+      precision:1100
+    });
+  }catch(_){}
+
+  const normalized=src
+    .replace(/×/g,'*')
+    .replace(/÷/g,'/');
+
+  const scope={};
+
+  const value=math.evaluate(normalized,scope);
+
+  return value && typeof value.toFixed==='function'
+    ? value.toFixed()
+    : String(value);
+}
+
+// اختيار المحرك المناسب
+
+function evaluateSmart(src){
+
+  const digits=(src.match(/\d/g)||[]).length;
+
+  if(digits>LIMIT){
+
+    return {
+      value:onlineEvaluate(src),
+      engine:'ONLINE LIBRARY'
+    };
+  }
+
+  try{
+
+    const local=parseLocal(src);
+    const text=format(local);
+
+    if(text.replace(/[-.]/g,'').length>LIMIT){
+      throw Error('LIMIT');
+    }
+
+    return {
+      value:text,
+      engine:'OFFLINE ENGINE'
+    };
+
+  }catch(err){
+
+    if(err.message==='LIMIT'){
+
+      return {
+        value:onlineEvaluate(src),
+        engine:'ONLINE LIBRARY'
+      };
+    }
+
+    throw err;
+  }
+}
+
+// تحديث الشاشة
+
+function updateDisplay(){
+
+  expressionEl.textContent=expression||'0';
+
+  resultEl.classList.remove('error');
+
+  if(!expression){
+
+    resultEl.textContent=lastResult;
+    statusText.textContent='READY / OFFLINE';
+    engineMode.textContent='OFFLINE ENGINE';
+
+  }else{
+
+    try{
+
+      const r=evaluateSmart(expression);
+
+      resultEl.textContent=r.value;
+      engineMode.textContent=r.engine;
+      statusText.textContent='PREVIEW / '+r.engine;
+
+    }catch(_){
+
+      resultEl.textContent='…';
+      statusText.textContent='INPUT';
+    }
+  }
+
+  requestAnimationFrame(()=>{
+
+    expressionWrap.scrollLeft=expressionWrap.scrollWidth;
+    resultWrap.scrollLeft=resultWrap.scrollWidth;
+
+  });
+}
+
+// تنفيذ الحساب
+
+function calculate(){
+
+  if(!expression.trim()) return;
+
+  try{
+
+    const r=evaluateSmart(expression);
+
+    lastResult=r.value;
+
+    expressionEl.textContent=expression+' =';
+
+    resultEl.textContent=r.value;
+    resultEl.classList.remove('error');
+
+    statusText.textContent='COMPLETE';
+    engineMode.textContent=r.engine;
+
+    expression='';
+    justCalculated=true;
+
+    requestAnimationFrame(()=>{
+      resultWrap.scrollLeft=resultWrap.scrollWidth;
+    });
+
+  }catch(err){
+
+    resultEl.textContent=
+      err.message==='OFFLINE_LIMIT'
+      ?'تجاوزت 1000 رقم: اتصل بالإنترنت'
+      :'تحقق من العملية';
+
+    resultEl.classList.add('error');
+
+    statusText.textContent='CALCULATION ERROR';
+  }
+}
+
+// إدخال الأرقام والعمليات
+
+function insert(value){
+
+  if(justCalculated){
+
+    if(/^[0-9.]$/.test(value)){
+      expression='';
+    }else if(value!==')'){
+      expression=lastResult;
+    }
+
+    justCalculated=false;
+  }
+
+  expression+=value;
+
+  updateDisplay();
+}
+
+function clearAll(){
+
+  expression='';
+  lastResult='0';
+  justCalculated=false;
+
+  updateDisplay();
+}
+
+function deleteLast(){
+
+  if(justCalculated){
+    expression=lastResult;
+    justCalculated=false;
+  }
+
+  expression=expression.slice(0,-1);
+
+  updateDisplay();
+}
+
+// الأزرار
+
+document.querySelectorAll('[data-insert]').forEach(b=>{
+
+  b.addEventListener('click',()=>{
+    insert(b.dataset.insert);
+  });
+
+});
+
+document.querySelectorAll('[data-action]').forEach(b=>{
+
+  b.addEventListener('click',()=>{
+
+    if(b.dataset.action==='clear') clearAll();
+
+    if(b.dataset.action==='delete') deleteLast();
+
+    if(b.dataset.action==='calculate') calculate();
+
+  });
+
+});
+
+// إظهار وإخفاء اللوحة العلمية
+
+$('scienceToggle').addEventListener('click',()=>{
+
+  $('sciencePanel').classList.toggle('open');
+
+  $('scienceToggle').classList.toggle('active');
+
+});
+
+// تغيير DEG / RAD
+
+$('angleToggle').addEventListener('click',()=>{
+
+  angleMode=angleMode==='deg'?'rad':'deg';
+
+  angleLabel.textContent=angleMode.toUpperCase();
+
+  $('angleToggle').classList.toggle('active',angleMode==='deg');
+
+  updateDisplay();
+
+});
+
+// أسهم التمرير
+
+$('scrollLeft').addEventListener('click',()=>{
+
+  resultWrap.scrollBy({
+    left:-180,
+    behavior:'smooth'
+  });
+
+  expressionWrap.scrollBy({
+    left:-180,
+    behavior:'smooth'
+  });
+
+});
+
+$('scrollRight').addEventListener('click',()=>{
+
+  resultWrap.scrollBy({
+    left:180,
+    behavior:'smooth'
+  });
+
+  expressionWrap.scrollBy({
+    left:180,
+    behavior:'smooth'
+  });
+
+});
+
+// لوحة المفاتيح
+
+document.addEventListener('keydown',e=>{
+
+  if(/^[0-9.]$/.test(e.key)){
+    insert(e.key);
+
+  }else if(['+','-','(',')'].includes(e.key)){
+    insert(e.key);
+
+  }else if(e.key==='*'){
+    insert('×');
+
+  }else if(e.key==='/'){
+    e.preventDefault();
+    insert('÷');
+
+  }else if(e.key==='Enter'||e.key==='='){
+    e.preventDefault();
+    calculate();
+
+  }else if(e.key==='Backspace'){
+    deleteLast();
+
+  }else if(e.key==='Escape'){
+    clearAll();
+  }
+
+});
+
+// السحب لمراجعة النتائج الطويلة
+
+let drag=false;
+let startX=0;
+let startScroll=0;
+
+resultWrap.addEventListener('pointerdown',e=>{
+
+  drag=true;
+  startX=e.clientX;
+  startScroll=resultWrap.scrollLeft;
+
+  resultWrap.setPointerCapture(e.pointerId);
+
+});
+
+resultWrap.addEventListener('pointermove',e=>{
+
+  if(drag){
+
+    resultWrap.scrollLeft=
+      startScroll-(e.clientX-startX);
+
+  }
+
+});
+
+resultWrap.addEventListener('pointerup',()=>{
+  drag=false;
+});
+
+resultWrap.addEventListener('pointercancel',()=>{
+  drag=false;
+});
+
+updateDisplay();
+
+})();
+</script>
+
+</body>
+</html>
